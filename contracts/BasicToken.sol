@@ -61,4 +61,7 @@ contract BasicToken is ERC20Basic, Claimable {
   function balanceOf(address _owner) public view virtual returns (uint256 balance) {
     return balances.balanceOf(_owner);
   }
+
+
+
 }
