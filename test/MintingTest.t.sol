@@ -29,6 +29,19 @@ contract MintingTest is Test {
         assertEq(aliceBalance, amount);
     }
 
+      function testMintToVerifiedAddress() public {
+        // Ensure Alice is verified
+        assertEq(equityCoin.isVerified(alice), true, "Alice should be verified");
+
+        // Mint tokens to Alice
+        uint256 amount = 100;
+        equityCoin.mint(alice, amount);
+
+        // Check Alice's balance
+        uint256 aliceBalance = equityCoin.balanceOf(alice);
+        assertEq(aliceBalance, amount, "Alice's balance should match the minted amount");
+    }
+
     function testMintToUnverifiedAddress() public {
         // Attempt to mint to an unverified address
         address unverified = address(0x2);
