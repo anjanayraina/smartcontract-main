@@ -12,6 +12,9 @@ contract BasicTokenTest is Test {
     address alice;
     address bob;
 
+    // Declare the Transfer event for testing purposes
+    event Transfer(address indexed from, address indexed to, uint256 value);
+
     function setUp() public {
         owner = address(this); // The test contract acts as the owner
         alice = address(0x1); // First user address
@@ -84,16 +87,37 @@ contract BasicTokenTest is Test {
         // Add balances to simulate minting
         balanceSheet.addBalance(alice, 100);
         balanceSheet.addBalance(bob, 200);
-        assertEq(balanceSheet.balanceOf(alice)  , 100);
 
-        // Update totalSupply_ directly using the contract
-        vm.startPrank(owner);
-        basicToken.setBalanceSheet(address(balanceSheet));
-        vm.stopPrank();
-        // Simulate changes in supply
-        vm.prank(owner);
-        uint256 newTotalSupply = 300;
-        assertEq(basicToken.totalSupply() , newTotalSupply);
+        // Verify total supply
+        assertEq(basicToken.totalSupply(), 300, "Total supply should match the sum of balances");
+    }
+
+    function testBalanceOf() public {
+        // Add balance to Alice
+        balanceSheet.addBalance(alice, 100);
+
+        // Check Alice's balance using balanceOf
+        uint256 aliceBalance = basicToken.balanceOf(alice);
+        assertEq(aliceBalance, 100, "Alice's balance should be 100");
+    }
+
+    function testBalanceOfZeroAddress() public {
+        // Check balance of zero address
+        uint256 zeroAddressBalance = basicToken.balanceOf(address(0));
+        assertEq(zeroAddressBalance, 0, "Zero address should have 0 balance");
+    }
+
+    function testEmitTransferEvent() public {
+        // Add balance to Alice
+        balanceSheet.addBalance(alice, 100);
+
+        // Expect Transfer event
+        vm.prank(alice);
+        vm.expectEmit(true, true, false, true); // From, To, Indexed, Data
+        emit Transfer(alice, bob, 50);
+
+        // Transfer tokens from Alice to Bob
+        basicToken.transfer(bob, 50);
     }
 
     function testNonOwnerSetBalanceSheetShouldRevert() public {

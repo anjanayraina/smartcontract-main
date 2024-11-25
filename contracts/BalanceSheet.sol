@@ -24,10 +24,10 @@ contract BalanceSheet is Claimable {
 
     function setBalance(address addr, uint256 value) public onlyOwner {
         if (value < balanceOf[addr]){
-            totalSupply_-=value;
+            totalSupply_-=( balanceOf[addr] - value);
         }
         else{
-            totalSupply_+=value;
+            totalSupply_+=(value - balanceOf[addr] );
         }
         balanceOf[addr] = value;
 

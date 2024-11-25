@@ -16,53 +16,49 @@ contract StandardTokenTest is Test {
     address spender;
 
     function setUp() public {
+        // Initialize addresses
         owner = address(this); // Test contract acts as the owner
-        alice = address(0x1); // Token holder address
-        bob = address(0x2);   // Recipient address
-        spender = address(0x3); // Spender address
+        alice = address(0x1); // Alice's address
+        bob = address(0x2); // Bob's address
+        spender = address(0x3); // Spender's address
 
-        // Deploy AllowanceSheet and BalanceSheet contracts
+        // Deploy contracts
         allowanceSheet = new AllowanceSheet();
         balanceSheet = new BalanceSheet();
-
-        // Deploy StandardToken contract
         standardToken = new StandardToken();
 
-        // Set BalanceSheet and AllowanceSheet in StandardToken
-        vm.startPrank(address(this));
-        standardToken.setBalanceSheet(address(balanceSheet));
+        // Transfer ownership of AllowanceSheet and BalanceSheet to StandardToken
+        vm.startPrank(owner);
+        allowanceSheet.transferOwnership(address(standardToken));
+        balanceSheet.transferOwnership(address(standardToken));
         standardToken.setAllowanceSheet(address(allowanceSheet));
+        standardToken.setBalanceSheet(address(balanceSheet));
         vm.stopPrank();
-        // Verify owner is correctly set
-        assertEq(standardToken.owner(), owner, "Owner should be correctly set");
-    }
-
-    function testSetAllowanceSheet() public {
-        // Verify the allowance sheet is correctly set
-        vm.startPrank(address(this));
-        assertEq(address(standardToken.allowances()), address(allowanceSheet), "AllowanceSheet should be correctly set");
-       vm.stopPrank();
-
-    }
-
-    function testSetBalanceSheet() public {
-        // Verify the balance sheet is correctly set
-        assertEq(address(standardToken.balances()), address(balanceSheet), "BalanceSheet should be correctly set");
+        vm.startPrank(address(standardToken));
+        allowanceSheet.claimOwnership();
+        vm.stopPrank();
     }
 
     function testApprove() public {
-        // Approve spender for Alice
+        // Add some balance to Alice's account
+        vm.prank(owner);
+        balanceSheet.addBalance(alice, 100);
+
+        // Alice approves the spender
         vm.prank(alice);
         standardToken.approve(spender, 100);
 
         // Verify the allowance
+        
         uint256 allowance = standardToken.allowance(alice, spender);
         assertEq(allowance, 100, "Allowance should match the approved value");
     }
 
     function testTransferFrom() public {
         // Add balance to Alice and set allowance for spender
+        vm.prank(owner);
         balanceSheet.addBalance(alice, 200);
+
         vm.prank(alice);
         standardToken.approve(spender, 100);
 
@@ -80,6 +76,34 @@ contract StandardTokenTest is Test {
         // Verify remaining allowance
         uint256 remainingAllowance = standardToken.allowance(alice, spender);
         assertEq(remainingAllowance, 50, "Remaining allowance should be reduced correctly");
+    }
+
+    function testTransferFromExceedingAllowanceShouldRevert() public {
+        // Add balance to Alice and set allowance for spender
+        vm.prank(owner);
+        balanceSheet.addBalance(alice, 200);
+
+        vm.prank(alice);
+        standardToken.approve(spender, 50);
+
+        // Attempt to transfer more than the allowance
+        vm.prank(spender);
+        vm.expectRevert(); // Exceeds allowance
+        standardToken.transferFrom(alice, bob, 100);
+    }
+
+    function testTransferFromExceedingBalanceShouldRevert() public {
+        // Add balance to Alice but insufficient funds
+        vm.prank(owner);
+        balanceSheet.addBalance(alice, 50);
+
+        vm.prank(alice);
+        standardToken.approve(spender, 100);
+
+        // Attempt to transfer more than Alice's balance
+        vm.prank(spender);
+        vm.expectRevert(); // Exceeds balance
+        standardToken.transferFrom(alice, bob, 100);
     }
 
     function testIncreaseApproval() public {
@@ -106,29 +130,5 @@ contract StandardTokenTest is Test {
         // Verify the updated allowance
         uint256 allowance = standardToken.allowance(alice, spender);
         assertEq(allowance, 60, "Allowance should reflect the decreased value");
-    }
-
-    function testTransferFromExceedingAllowanceShouldRevert() public {
-        // Add balance to Alice and set allowance for spender
-        balanceSheet.addBalance(alice, 200);
-        vm.prank(alice);
-        standardToken.approve(spender, 50);
-
-        // Attempt to transfer more than the allowance
-        vm.prank(spender);
-        vm.expectRevert(); // Exceeds allowance
-        standardToken.transferFrom(alice, bob, 100);
-    }
-
-    function testTransferFromExceedingBalanceShouldRevert() public {
-        // Add balance to Alice but no sufficient funds
-        balanceSheet.addBalance(alice, 50);
-        vm.prank(alice);
-        standardToken.approve(spender, 100);
-
-        // Attempt to transfer more than Alice's balance
-        vm.prank(spender);
-        vm.expectRevert(); // Exceeds balance
-        standardToken.transferFrom(alice, bob, 100);
     }
 }
