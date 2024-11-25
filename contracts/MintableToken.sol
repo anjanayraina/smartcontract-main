@@ -26,4 +26,6 @@ contract MintableToken is StandardToken {
     emit Transfer(address(0), _to, _amount);
     return true;
   }
+
+  
 }
