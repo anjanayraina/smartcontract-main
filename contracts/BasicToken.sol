@@ -23,15 +23,11 @@ contract BasicToken is ERC20Basic, Claimable {
 
   function setBalanceSheet(address sheet) external onlyOwner {
     balances = BalanceSheet(sheet);
-    balances.claimOwnership();
   }
 
-  /**
-  * @dev total number of tokens in existence
-  */
-  function totalSupply() public view returns (uint256) {
-    return totalSupply_;
-  }
+   function totalSupply() external view returns (uint256){
+    return balances.getTotalSupply();
+   }
 
   /**
   * @dev transfer token for a specified address

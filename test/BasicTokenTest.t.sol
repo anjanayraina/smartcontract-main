@@ -84,20 +84,16 @@ contract BasicTokenTest is Test {
         // Add balances to simulate minting
         balanceSheet.addBalance(alice, 100);
         balanceSheet.addBalance(bob, 200);
+        assertEq(balanceSheet.balanceOf(alice)  , 100);
 
         // Update totalSupply_ directly using the contract
         vm.startPrank(owner);
         basicToken.setBalanceSheet(address(balanceSheet));
         vm.stopPrank();
-
-        // Verify total supply through totalSupply() function
-        uint256 totalSupply = basicToken.totalSupply();
-        assertEq(totalSupply, 0, "Total supply should initially be 0");
-
         // Simulate changes in supply
         vm.prank(owner);
         uint256 newTotalSupply = 300;
-        assertEq(totalSupply, newTotalSupply);
+        assertEq(basicToken.totalSupply() , newTotalSupply);
     }
 
     function testNonOwnerSetBalanceSheetShouldRevert() public {
