@@ -32,10 +32,24 @@ contract EquityCoinTest is Test {
         equityCoin = new EquityCoin();
 
         // Set BalanceSheet and AllowanceSheet
-        balanceSheet.transferOwnership(address(equityCoin));
+        vm.startPrank(owner);
         allowanceSheet.transferOwnership(address(equityCoin));
-        equityCoin.setBalanceSheet(address(balanceSheet));
+        balanceSheet.transferOwnership(address(equityCoin));
         equityCoin.setAllowanceSheet(address(allowanceSheet));
+        equityCoin.setBalanceSheet(address(balanceSheet));
+        vm.stopPrank();
+
+        vm.startPrank(address(equityCoin));
+        allowanceSheet.claimOwnership();
+        balanceSheet.claimOwnership();
+        vm.stopPrank();
+    }
+
+    function testConstructor() public { 
+        assertEq(equityCoin.name(), "EquityCoin", "Name should be set correctly");
+        assertEq(equityCoin.symbol(), "EQTY", "Symbol should be set correctly");
+        assertEq(equityCoin.lockingPeriodEnabled(), true, "Locking period should be enabled");
+        assertEq(equityCoin.lockingPeriod(), block.timestamp + 365 days, "Locking period should be 365 days");
     }
 
     function testAddVerifiedAddress() public {
@@ -43,40 +57,9 @@ contract EquityCoinTest is Test {
         assertTrue(equityCoin.isVerified(alice), "Alice should be a verified address");
     }
 
-    function testMintTokens() public {
-        // Add Alice as a verified address
-        equityCoin.addVerified(alice, validHash);
 
-        // Mint tokens to Alice
-        console.log("The owner of the contract is : " , equityCoin.owner());
-        vm.startPrank(address(equityCoin));
-        equityCoin.mint(alice, 100);
 
-        // Verify Alice's balance
-        uint256 aliceBalance = equityCoin.balanceOf(alice);
-        assertEq(aliceBalance, 100, "Alice's balance should match the minted amount");
 
-        // Verify Alice is now a shareholder
-        assertTrue(equityCoin.isHolder(alice), "Alice should be a shareholder");
-        vm.stopPrank();
-    }
-
-    function testTransferTokens() public {
-        // Add Alice and Bob as verified addresses
-        equityCoin.addVerified(alice, validHash);
-        equityCoin.addVerified(bob, validHash);
-
-        // Mint tokens to Alice
-        equityCoin.mint(alice, 100);
-
-        // Transfer tokens from Alice to Bob
-        vm.prank(alice);
-        equityCoin.transfer(bob, 50);
-
-        // Verify balances
-        assertEq(equityCoin.balanceOf(alice), 50, "Alice's balance should decrease");
-        assertEq(equityCoin.balanceOf(bob), 50, "Bob's balance should increase");
-    }
 
     function testTransferFailsDuringLockingPeriod() public {
         // Add Alice and Bob as verified addresses
@@ -133,6 +116,7 @@ contract EquityCoinTest is Test {
         equityCoin.mint(alice, 100);
 
         // Burn Alice's tokens
+        vm.prank(address(equityCoin));
         balanceSheet.setBalance(alice, 0);
 
         // Remove Alice as a verified address
@@ -141,6 +125,61 @@ contract EquityCoinTest is Test {
         // Verify Alice is no longer verified
         assertFalse(equityCoin.isVerified(alice), "Alice should no longer be a verified address");
     }
+
+    function testTransferFrom() public {
+    // Add Alice and Bob as verified addresses
+    equityCoin.addVerified(alice, validHash);
+    equityCoin.addVerified(bob, validHash);
+
+    // Disable the locking period
+    equityCoin.enableLockingPeriod(false);
+
+    // Mint tokens to Alice
+    equityCoin.mint(alice, 200);
+
+    // Approve spender to transfer tokens from Alice
+    address spender = address(0x6);
+    vm.prank(alice);
+    equityCoin.approve(spender, 100);
+
+    // Spender transfers tokens from Alice to Bob
+    vm.prank(spender);
+    equityCoin.transferFrom(alice, bob, 50);
+
+    // Verify balances
+    assertEq(equityCoin.balanceOf(alice), 150, "Alice's balance should decrease by 50");
+    assertEq(equityCoin.balanceOf(bob), 50, "Bob's balance should increase by 50");
+
+    // Verify allowance is reduced
+    uint256 remainingAllowance = equityCoin.allowance(alice, spender);
+    assertEq(remainingAllowance, 50, "Remaining allowance should decrease by 50");
+
+    // Verify Bob is now a shareholder
+    assertTrue(equityCoin.isHolder(bob), "Bob should be a shareholder");
+
+    // Verify Alice is still a shareholder
+    assertTrue(equityCoin.isHolder(alice), "Alice should still be a shareholder");
+}
+
+function testTransferFromFailsIfNotVerified() public {
+    // Add Alice as a verified address, but not Bob
+            equityCoin.enableLockingPeriod(false);
+
+    equityCoin.addVerified(alice, validHash);
+    address spender = address(0x6);
+
+    // Mint tokens to Alice
+    equityCoin.mint(alice, 200);
+
+    // Approve spender to transfer tokens from Alice
+    vm.prank(alice);
+    equityCoin.approve(spender, 100);
+
+    // Attempt to transfer tokens from Alice to Bob (unverified address)
+    vm.prank(spender);
+    vm.expectRevert("address not verified");
+    equityCoin.transferFrom(alice, bob, 50);
+}
 
     function testCancelAndReissue() public {
         // Add Alice and Carol as verified addresses

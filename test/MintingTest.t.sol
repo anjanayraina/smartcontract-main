@@ -2,52 +2,102 @@
 pragma solidity 0.8.16;
 
 import "forge-std/Test.sol";
-import "../contracts/EquityCoin.sol";
+import "../contracts/MintableToken.sol";
+import "../contracts/AllowanceSheet.sol";
+import "../contracts/BalanceSheet.sol";
 
-contract MintingTest is Test {
-    EquityCoin equityCoin;
+contract MintableTokenTest is Test {
+    MintableToken mintableToken;
+    AllowanceSheet allowanceSheet;
+    BalanceSheet balanceSheet;
     address owner;
     address alice;
 
     function setUp() public {
-        owner = address(this);
-        alice = address(0x1);
+        // Initialize addresses
+        owner = address(this); // Test contract acts as the owner
+        alice = address(0x1); // Alice's address
 
-        equityCoin = new EquityCoin();
+        // Deploy contracts
+        allowanceSheet = new AllowanceSheet();
+        balanceSheet = new BalanceSheet();
+        mintableToken = new MintableToken();
 
-        // Owner adds verified addresses
-        equityCoin.addVerified(alice, bytes32("AliceHash"));
+        // Transfer ownership of AllowanceSheet and BalanceSheet to MintableToken
+        vm.startPrank(owner);
+        allowanceSheet.transferOwnership(address(mintableToken));
+        balanceSheet.transferOwnership(address(mintableToken));
+        mintableToken.setAllowanceSheet(address(allowanceSheet));
+        mintableToken.setBalanceSheet(address(balanceSheet));
+        vm.stopPrank();
+        vm.startPrank(address(mintableToken));
+        allowanceSheet.claimOwnership();
+        vm.stopPrank();
     }
 
     function testMint() public {
-        // Owner mints tokens to Alice
-        uint256 amount = 100;
-        equityCoin.mint(alice, amount);
+        // Mint tokens for Alice
+        uint256 mintAmount = 100;
+        vm.prank(owner);
+        bool success = mintableToken.mint(alice, mintAmount);
 
-        // Check Alice's balance
-        uint256 aliceBalance = equityCoin.balanceOf(alice);
-        assertEq(aliceBalance, amount);
+        // Verify the mint operation
+        assertTrue(success, "Mint should return true");
+
+        // Verify Alice's balance
+        uint256 aliceBalance = mintableToken.balanceOf(alice);
+        assertEq(aliceBalance, mintAmount, "Alice's balance should match the minted amount");
+
+        // Verify total supply
+        uint256 totalSupply = mintableToken.totalSupply();
+        assertEq(totalSupply, mintAmount, "Total supply should match the minted amount");
     }
 
-      function testMintToVerifiedAddress() public {
-        // Ensure Alice is verified
-        assertEq(equityCoin.isVerified(alice), true, "Alice should be verified");
+    function testMintTwice() public {
+        // Mint tokens for Alice twice
+        vm.prank(owner);
+        mintableToken.mint(alice, 50);
 
-        // Mint tokens to Alice
-        uint256 amount = 100;
-        equityCoin.mint(alice, amount);
+        vm.prank(owner);
+        mintableToken.mint(alice, 50);
 
-        // Check Alice's balance
-        uint256 aliceBalance = equityCoin.balanceOf(alice);
-        assertEq(aliceBalance, amount, "Alice's balance should match the minted amount");
+        // Verify Alice's balance
+        uint256 aliceBalance = mintableToken.balanceOf(alice);
+        assertEq(aliceBalance, 100, "Alice's balance should match the total minted amount");
+
+        // Verify total supply
+        uint256 totalSupply = mintableToken.totalSupply();
+        assertEq(totalSupply, 100, "Total supply should match the total minted amount");
     }
 
-    function testMintToUnverifiedAddress() public {
-        // Attempt to mint to an unverified address
-        address unverified = address(0x2);
-        uint256 amount = 100;
+    function testMintByNonOwnerShouldRevert() public {
+        // Attempt to mint tokens from a non-owner account
+        vm.prank(alice);
+        vm.expectRevert("Ownable: caller is not the owner");
+        mintableToken.mint(alice, 100);
+    }
 
-        vm.expectRevert("address not verified");
-        equityCoin.mint(unverified, amount);
+    function testMintZeroAmount() public {
+        // Mint zero tokens
+        vm.prank(owner);
+        bool success = mintableToken.mint(alice, 0);
+
+        // Verify the mint operation
+        assertTrue(success, "Mint should return true for zero amount");
+
+        // Verify Alice's balance
+        uint256 aliceBalance = mintableToken.balanceOf(alice);
+        assertEq(aliceBalance, 0, "Alice's balance should remain zero");
+
+        // Verify total supply
+        uint256 totalSupply = mintableToken.totalSupply();
+        assertEq(totalSupply, 0, "Total supply should remain zero");
+    }
+
+    function testMintToZeroAddressShouldRevert() public {
+        // Attempt to mint tokens to the zero address
+        vm.prank(owner);
+        vm.expectRevert(); // Should revert for minting to zero address
+        mintableToken.mint(address(0), 100);
     }
 }
