@@ -1,20 +1,26 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
 
+import './BasicToken.sol';
 import './MintableToken.sol';
 import './ERC884.sol';
+import './BalanceSheet.sol';
+import './Claimable.sol';
+import './ERC20.sol';
+import './AllowanceSheet.sol';
+
 
 /**
-*    Equity Platforms, Inc.
-*    EIN: 86-1346507
+*    Pursuit to Own Partners, Inc.
+*    EIN: 00-0000000
 */
 
-contract EquityCoin is ERC884, MintableToken {
+contract Pursuit is ERC884, MintableToken {
 
-    string public name;
-    string public symbol;
+    string  public name;
+    string  public symbol;
 
-    uint256 public decimals = 0;
+    uint public decimals = 0;
 
     bytes32 constant private ZERO_BYTES = bytes32(0);
     address constant private ZERO_ADDRESS = address(0);
@@ -53,30 +59,36 @@ contract EquityCoin is ERC884, MintableToken {
 
 
     modifier isNotLockingPeriod() {
-        require(!lockingPeriodEnabled || lockingPeriod < block.timestamp || msg.sender == owner(), "cannot transfer tokens during locking period of 12 months"); 
+        require(lockingPeriodEnabled == true || lockingPeriod < block.timestamp, "cannot withdraw tokens during locking period of 12 months"); 
         _;
     }
 
     constructor() {
 
-        name = "EquityCoin";
-        symbol = "EQTY";
+        name = "PursuitToOwn";
+        symbol = "PTOX";
         lockingPeriodEnabled = true;
-        lockingPeriod = block.timestamp + 365 days;
+        lockingPeriod = 0;
 
     }
 
-    function enableLockingPeriod(bool _value) public onlyOwner {
+    function enableLockingPeriod( bool _value ) public onlyOwner {
        lockingPeriodEnabled = _value;
+       if(_value == true){
+           lockingPeriod = 365;
+       }
        emit LockingPeriodEnabled(lockingPeriodEnabled);
-    }
+   }
+   
 
-    function setLockingPeriod(uint _lockTimeInDays) public onlyOwner {
-        uint pDays =_lockTimeInDays * 1 days; //change it to days 
+    function setlockingPeriod(uint _lockTimeInDays) public onlyOwner {
+        uint pDays =_lockTimeInDays * 365 days; //change it to days 
         lockingPeriod = block.timestamp + pDays;
         emit LockingPeriodUpdated(_lockTimeInDays);
     }
 
+    
+   
     /**
      * As each token is minted it is added to the shareholders array.
      * @param _to The address that will receive the minted tokens.
@@ -102,6 +114,7 @@ contract EquityCoin is ERC884, MintableToken {
      */
     function holderCount()
         public
+        onlyOwner
         view
         returns (uint)
     {
@@ -366,21 +379,21 @@ contract EquityCoin is ERC884, MintableToken {
     function pruneShareholders(address addr, uint256 value)
         internal
     {
-        uint256 balance = balances.balanceOf(addr) - value;
+        balances.subBalance(addr, value);
+        uint256 balance = balances.balanceOf(addr);
         if (balance > 0) {
             return;
         }
         uint256 holderIndex = holderIndices[addr] - 1;
         uint256 lastIndex = shareholders.length - 1;
         address lastHolder = shareholders[lastIndex];
-
         // overwrite the addr's slot with the last shareholder
         shareholders[holderIndex] = lastHolder;
         // also copy over the index (thanks @mohoff for spotting this)
         // ref https://github.com/davesag/ERC884-reference-implementation/issues/20
         holderIndices[lastHolder] = holderIndices[addr];
         // trim the shareholders array (which drops the last entry)
-        shareholders.pop();
+        shareholders.length-1;
         // and zero out the index for addr
         holderIndices[addr] = 0;
     }

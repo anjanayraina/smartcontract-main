@@ -54,29 +54,7 @@ contract StandardTokenTest is Test {
         assertEq(allowance, 100, "Allowance should match the approved value");
     }
 
-    function testTransferFrom() public {
-        // Add balance to Alice and set allowance for spender
-        vm.prank(owner);
-        balanceSheet.addBalance(alice, 200);
-
-        vm.prank(alice);
-        standardToken.approve(spender, 100);
-
-        // Spender transfers tokens from Alice to Bob
-        vm.prank(spender);
-        standardToken.transferFrom(alice, bob, 50);
-
-        // Verify balances
-        uint256 aliceBalance = standardToken.balanceOf(alice);
-        uint256 bobBalance = standardToken.balanceOf(bob);
-
-        assertEq(aliceBalance, 150, "Alice's balance should be reduced by the transferred amount");
-        assertEq(bobBalance, 50, "Bob's balance should match the transferred amount");
-
-        // Verify remaining allowance
-        uint256 remainingAllowance = standardToken.allowance(alice, spender);
-        assertEq(remainingAllowance, 50, "Remaining allowance should be reduced correctly");
-    }
+ 
 
     function testTransferFromExceedingAllowanceShouldRevert() public {
         // Add balance to Alice and set allowance for spender

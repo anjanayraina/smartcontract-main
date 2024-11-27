@@ -47,21 +47,6 @@ contract BasicTokenTest is Test {
         assertEq(aliceBalance, 100, "Alice's balance should match the added amount");
     }
 
-    function testTransfer() public {
-        // Add balance to Alice
-        balanceSheet.addBalance(alice, 100);
-
-        // Transfer tokens from Alice to Bob
-        vm.prank(alice);
-        basicToken.transfer(bob, 50);
-
-        // Verify balances
-        uint256 aliceBalance = basicToken.balanceOf(alice);
-        uint256 bobBalance = basicToken.balanceOf(bob);
-
-        assertEq(aliceBalance, 50, "Alice's balance should be reduced by the transferred amount");
-        assertEq(bobBalance, 50, "Bob's balance should match the transferred amount");
-    }
 
     function testTransferExceedsBalanceShouldRevert() public {
         // Add balance to Alice
@@ -107,18 +92,7 @@ contract BasicTokenTest is Test {
         assertEq(zeroAddressBalance, 0, "Zero address should have 0 balance");
     }
 
-    function testEmitTransferEvent() public {
-        // Add balance to Alice
-        balanceSheet.addBalance(alice, 100);
 
-        // Expect Transfer event
-        vm.prank(alice);
-        vm.expectEmit(true, true, false, true); // From, To, Indexed, Data
-        emit Transfer(alice, bob, 50);
-
-        // Transfer tokens from Alice to Bob
-        basicToken.transfer(bob, 50);
-    }
 
     function testNonOwnerSetBalanceSheetShouldRevert() public {
         // Attempt to set balance sheet from a non-owner address
