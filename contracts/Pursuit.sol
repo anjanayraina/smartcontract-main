@@ -71,7 +71,7 @@ contract Pursuit is ERC884, MintableToken {
         lockingPeriod = 0;
 
     }
-
+// @audit this is different as well 
     function enableLockingPeriod( bool _value ) public onlyOwner {
        lockingPeriodEnabled = _value;
        if(_value == true){
@@ -80,7 +80,7 @@ contract Pursuit is ERC884, MintableToken {
        emit LockingPeriodEnabled(lockingPeriodEnabled);
    }
    
-
+// @audit this is different too 
     function setlockingPeriod(uint _lockTimeInDays) public onlyOwner {
         uint pDays =_lockTimeInDays * 365 days; //change it to days 
         lockingPeriod = block.timestamp + pDays;
@@ -376,6 +376,8 @@ contract Pursuit is ERC884, MintableToken {
      *  @param addr The address to prune if their balance will be reduced to 0.
      @  @dev see https://ethereum.stackexchange.com/a/39311
      */
+    
+    // @audit this is different too 
     function pruneShareholders(address addr, uint256 value)
         internal
     {

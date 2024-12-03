@@ -22,7 +22,8 @@ contract BasicToken is ERC20Basic, Claimable {
   uint256 totalSupply_;
 
   function setBalanceSheet(address sheet) external onlyOwner {
-    balances = BalanceSheet(sheet);
+
+    balances = BalanceSheet(sheet); // @audit claimOwnersip not called
   }
 
    function totalSupply() external view returns (uint256){
