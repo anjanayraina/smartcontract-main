@@ -1,26 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
 
-import './BasicToken.sol';
 import './MintableToken.sol';
 import './ERC884.sol';
-import './BalanceSheet.sol';
-import './Claimable.sol';
-import './ERC20.sol';
-import './AllowanceSheet.sol';
-
 
 /**
-*    Pursuit to Own Partners, Inc.
-*    EIN: 00-0000000
+*    Equity Platforms, Inc.
 */
 
 contract Pursuit is ERC884, MintableToken {
 
-    string  public name;
-    string  public symbol;
+    string public name;
+    string public symbol;
 
-    uint public decimals = 0;
+    uint256 public decimals = 0;
 
     bytes32 constant private ZERO_BYTES = bytes32(0);
     address constant private ZERO_ADDRESS = address(0);
@@ -59,36 +52,30 @@ contract Pursuit is ERC884, MintableToken {
 
 
     modifier isNotLockingPeriod() {
-        require(lockingPeriodEnabled == true || lockingPeriod < block.timestamp, "cannot withdraw tokens during locking period of 12 months"); 
+        require(!lockingPeriodEnabled || lockingPeriod < block.timestamp || msg.sender == owner(), "cannot transfer tokens during locking period of 12 months"); 
         _;
     }
 
     constructor() {
 
-        name = "PursuitToOwn";
+        name = "Pursuit To Own Token";
         symbol = "PTOX";
         lockingPeriodEnabled = true;
-        lockingPeriod = 0;
+        lockingPeriod = block.timestamp + 365 days;
 
     }
-// @audit this is different as well 
-    function enableLockingPeriod( bool _value ) public onlyOwner {
+
+    function enableLockingPeriod(bool _value) public onlyOwner {
        lockingPeriodEnabled = _value;
-       if(_value == true){
-           lockingPeriod = 365;
-       }
        emit LockingPeriodEnabled(lockingPeriodEnabled);
-   }
-   
-// @audit this is different too 
-    function setlockingPeriod(uint _lockTimeInDays) public onlyOwner {
-        uint pDays =_lockTimeInDays * 365 days; //change it to days 
+    }
+
+    function setLockingPeriod(uint _lockTimeInDays) public onlyOwner {
+        uint pDays =_lockTimeInDays * 1 days; //change it to days 
         lockingPeriod = block.timestamp + pDays;
         emit LockingPeriodUpdated(_lockTimeInDays);
     }
 
-    
-   
     /**
      * As each token is minted it is added to the shareholders array.
      * @param _to The address that will receive the minted tokens.
@@ -114,7 +101,6 @@ contract Pursuit is ERC884, MintableToken {
      */
     function holderCount()
         public
-        onlyOwner
         view
         returns (uint)
     {
@@ -308,6 +294,8 @@ contract Pursuit is ERC884, MintableToken {
         return verified[addr] == hash;
     }
 
+
+
     /**
      *  Checks to see if the supplied address was superseded.
      *  @param addr The address to check.
@@ -376,26 +364,24 @@ contract Pursuit is ERC884, MintableToken {
      *  @param addr The address to prune if their balance will be reduced to 0.
      @  @dev see https://ethereum.stackexchange.com/a/39311
      */
-    
-    // @audit this is different too 
     function pruneShareholders(address addr, uint256 value)
         internal
     {
-        balances.subBalance(addr, value);
-        uint256 balance = balances.balanceOf(addr);
+        uint256 balance = balances.balanceOf(addr) - value;
         if (balance > 0) {
             return;
         }
         uint256 holderIndex = holderIndices[addr] - 1;
         uint256 lastIndex = shareholders.length - 1;
         address lastHolder = shareholders[lastIndex];
+
         // overwrite the addr's slot with the last shareholder
         shareholders[holderIndex] = lastHolder;
         // also copy over the index (thanks @mohoff for spotting this)
         // ref https://github.com/davesag/ERC884-reference-implementation/issues/20
         holderIndices[lastHolder] = holderIndices[addr];
         // trim the shareholders array (which drops the last entry)
-        shareholders.length-1;
+        shareholders.pop();
         // and zero out the index for addr
         holderIndices[addr] = 0;
     }

@@ -19,6 +19,7 @@ contract StandardToken is ERC20, BasicToken {
 
   function setAllowanceSheet(address sheet) external onlyOwner {
     allowances = AllowanceSheet(sheet);
+    allowances.claimOwnership();
   }
 
   /**

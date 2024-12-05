@@ -26,6 +26,11 @@ contract MintableToken is StandardToken {
     emit Transfer(address(0), _to, _amount);
     return true;
   }
-
-  
+  function _mint(address _to, uint256 _amount) internal  returns (bool) {
+    totalSupply_ = totalSupply_ + (_amount);
+    balances.addBalance(_to, _amount);
+    emit Mint(_to, _amount);
+    emit Transfer(address(0), _to, _amount);
+    return true;
+  }
 }

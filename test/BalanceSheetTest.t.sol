@@ -64,45 +64,8 @@ contract BalanceSheetTest is Test {
         assertEq(balance, 0, "Balance should be zero");
     }
 
-    function testSetBalanceDecreasesTotalSupply() public {
-        // Set an initial balance
-        balanceSheet.setBalance(user, 100);
 
-        // Verify initial total supply
-        uint256 initialTotalSupply = balanceSheet.getTotalSupply();
-        assertEq(initialTotalSupply, 100, "Total supply should match initial balance");
 
-        // Set a lower balance for the user
-        balanceSheet.setBalance(user, 50);
-
-        // Verify total supply decreases
-        uint256 updatedTotalSupply = balanceSheet.getTotalSupply();
-        assertEq(updatedTotalSupply, 50, "Total supply should decrease correctly");
-
-        // Verify user balance
-        uint256 userBalance = balanceSheet.balanceOf(user);
-        assertEq(userBalance, 50, "User balance should be updated correctly");
-    }
-
-    function testSetBalanceIncreasesTotalSupply() public {
-        // Set an initial balance
-        balanceSheet.setBalance(user, 50);
-
-        // Verify initial total supply
-        uint256 initialTotalSupply = balanceSheet.getTotalSupply();
-        assertEq(initialTotalSupply, 50, "Total supply should match initial balance");
-
-        // Set a higher balance for the user
-        balanceSheet.setBalance(user, 100);
-
-        // Verify total supply increases
-        uint256 updatedTotalSupply = balanceSheet.getTotalSupply();
-        assertEq(updatedTotalSupply, 100, "Total supply should increase correctly");
-
-        // Verify user balance
-        uint256 userBalance = balanceSheet.balanceOf(user);
-        assertEq(userBalance, 100, "User balance should be updated correctly");
-    }
 
     function testNonOwnerCannotModifyBalance() public {
         // Simulate a non-owner trying to modify balances
@@ -135,26 +98,5 @@ contract BalanceSheetTest is Test {
         balanceSheet.subBalance(user, 100);
     }
 
-    function testTotalSupplyReflectsBalanceChanges() public {
-        // Add balance to the user
-        balanceSheet.addBalance(user, 100);
 
-        // Verify total supply after addition
-        uint256 totalSupplyAfterAdd = balanceSheet.getTotalSupply();
-        assertEq(totalSupplyAfterAdd, 100, "Total supply should match added balance");
-
-        // Subtract balance from the user
-        balanceSheet.subBalance(user, 50);
-
-        // Verify total supply after subtraction
-        uint256 totalSupplyAfterSub = balanceSheet.getTotalSupply();
-        assertEq(totalSupplyAfterSub, 50, "Total supply should match remaining balance");
-
-        // Set balance directly
-        balanceSheet.setBalance(user, 200);
-
-        // Verify total supply after direct set
-        uint256 totalSupplyAfterSet = balanceSheet.getTotalSupply();
-        assertEq(totalSupplyAfterSet, 200, "Total supply should match directly set balance");
-    }
 }

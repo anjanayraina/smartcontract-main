@@ -42,10 +42,7 @@ contract PursuitTest is Test {
         equityCoin.setBalanceSheet(address(balanceSheet));
         vm.stopPrank();
 
-        vm.startPrank(address(equityCoin));
-        allowanceSheet.claimOwnership();
-        balanceSheet.claimOwnership();
-        vm.stopPrank();
+ 
     }
 
 
