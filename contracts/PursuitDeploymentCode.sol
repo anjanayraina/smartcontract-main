@@ -760,9 +760,7 @@ contract MintableToken is StandardToken {
   }
 }
 
-/** 
- *  SourceUnit: /home/stryder/Desktop/smartcontract-main/contracts/Pursuit.sol
-*/
+
 
 ////// SPDX-License-Identifier-FLATTEN-SUPPRESS-WARNING: MIT
 pragma solidity 0.8.16;
@@ -771,7 +769,7 @@ pragma solidity 0.8.16;
 ////import './ERC884.sol';
 
 /**
-*    Equity Platforms, Inc.
+*    Pursuit to Own Partners, Inc.
 */
 
 contract Pursuit is ERC884, MintableToken {
